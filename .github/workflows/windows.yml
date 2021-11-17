@@ -1,0 +1,33 @@
+name: Build (Windows)
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build-windows:
+    runs-on: windows-2019
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Configure
+      run: cmake -S . -B build -G "Visual Studio 16 2019" -A x64 \
+        -D CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded"
+
+    - name: Build
+      run: cmake --build build --config Release --parallel %NUMBER_OF_PROCESSORS% --verbose
+
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Neo_f3kdb-Windows-x64
+        path: build/Release/*.dll
