@@ -19,19 +19,24 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/src/version.rc"
 )
 
-find_package(PkgConfig REQUIRED)
+if (NOT MSVC)
+  find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(AVISYNTH avisynth)
-if(AVISYNTH_FOUND)
-  include_directories(${AVISYNTH_INCLUDE_DIRS})
+  pkg_check_modules(AVISYNTH avisynth)
+  if(AVISYNTH_FOUND)
+    include_directories(${AVISYNTH_INCLUDE_DIRS})
+  else()
+    include_directories(include/avisynth)
+  endif()
+
+  pkg_check_modules(VAPOURSYNTH vapoursynth)
+  if(VAPOURSYNTH_FOUND)
+    include_directories(${VAPOURSYNTH_INCLUDE_DIRS})
+  else()
+    include_directories(include/vapoursynth)
+  endif()
 else()
   include_directories(include/avisynth)
-endif()
-
-pkg_check_modules(VAPOURSYNTH vapoursynth)
-if(VAPOURSYNTH_FOUND)
-  include_directories(${VAPOURSYNTH_INCLUDE_DIRS})
-else()
   include_directories(include/vapoursynth)
 endif()
 
@@ -48,6 +53,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   set_source_files_properties(${SSE41_CODE_IMPL} PROPERTIES COMPILE_FLAGS "/arch:SSE2")
+  target_link_libraries(neo-f3kdb libmmds)
+
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+  set_source_files_properties(${SSE41_CODE_IMPL} PROPERTIES COMPILE_FLAGS "-msse4.1")
   target_link_libraries(neo-f3kdb libmmds)
 
 else()
