@@ -1,10 +1,20 @@
 name: Build (Windows)
 
-on: [push, workflow_dispatch]
+on:
+  release:
+    types: [created]
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'which tag to create and release?'
+        required: true
+        default: 'v100'
 
 jobs:
   build-windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     defaults:
       run:
@@ -12,7 +22,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -20,14 +30,30 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Configure
-      run: cmake -S . -B build -G "Visual Studio 16 2019" -A x64 \
+      run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64 \
         -D CMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded"
 
     - name: Build
       run: cmake --build build --config Release --parallel %NUMBER_OF_PROCESSORS% --verbose
 
+    - name: Package Release
+      shell: bash
+      run: |
+        git clone https://github.com/AkarinVS/exe/
+        cd build/Release/
+        ../../exe/zip.exe -9r ../../Neo_f3kdb-Windows-x64.zip *.dll
+
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Neo_f3kdb-Windows-x64
         path: build/Release/*.dll
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: github.event_name == 'release' || github.event_name == 'workflow_dispatch' && github.event.inputs.tag != ''
+      with:
+        files: "Neo_f3kdb-Windows-x64.zip"
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
